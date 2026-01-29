@@ -4943,7 +4943,7 @@ export default class AmeyPhil extends StationAnnouncementSystem {
   async playStandingTrainAnnouncement(options: IStandingTrainAnnouncementOptions, download: boolean = false): Promise<void> {
     const files: AudioItem[] = []
 
-    files.push(`station.m.${options.thisStationCode}`, this.standingOptions.thisIsId, `station.e.${options.thisStationCode}`)
+    //files.push(`station.m.${options.thisStationCode}`, this.standingOptions.thisIsId, `station.e.${options.thisStationCode}`)
 
     if (options.mindTheGap) {
       files.push(
