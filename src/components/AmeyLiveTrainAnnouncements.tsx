@@ -1183,6 +1183,14 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               return false
             }
 
+            if (!s.atdSpecified || dayjs.tz(s.atd, 'Europe/London').subtract(1, 'minutes').isAfter(dayjs.tz())) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it will depart soon (${s.atd} -1m)`)
+              console.log(
+                `[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it will depart soon (${s.atd} -1m)`,
+              )
+              return false
+            }
+
             // Wait n seconds after arrival to announce
             return true
           })
