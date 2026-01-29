@@ -225,8 +225,8 @@ async function getServiceByRidForActivityData(rid: string): Promise<AssociatedSe
 
 async function getServiceByRid(apiKey: string, rid: string, followAssociations: boolean = false): Promise<AssociatedServiceDetail | undefined> {
   const cache = await caches.open('associated-service')
-  // const url = `https://national-rail-api.davwheat.dev/service/${rid}`
-  const url = `https://api1.raildata.org.uk/1010-query-services-and-service-details1_0/LDBSVWS/api/20220120/GetServiceDetailsByRID/${encodeURIComponent(rid)}`
+  const url = `https://national-rail-api.davwheat.dev/service/${rid}`
+  //const url = `https://api1.raildata.org.uk/1010-query-services-and-service-details1_0/LDBSVWS/api/20220120/GetServiceDetailsByRID/${encodeURIComponent(rid)}`
 
   const cachedResponse = await cache.match(url, { ignoreMethod: true })
   if (cachedResponse) {
@@ -435,27 +435,37 @@ export const onRequest: PagesFunction<Env> = async context => {
       timeWindow,
     })
 
-    // const response = await fetch(`https://national-rail-api.davwheat.dev/staffdepartures/${station}/${maxServices}?${params}`, {
-    //   cf: {
-    //     cacheTtl: 10,
-    //     cacheEverything: true,
-    //   },
-    // })
-    //
-    // if (!response.ok) {
+    const response = await fetch(`https://national-rail-api.davwheat.dev/staffdepartures/${station}/${maxServices}?${params}`, {
+      cf: {
+        cacheTtl: 10,
+        cacheEverything: true,
+      }
+    })
+
+    if (!response.ok) {
+      return Response.json(
+        { error: true, message: 'Upstream fetch error' },
+        {
+          status: 502,
+          headers: { "Access-Control-Allow-Origin": "*" }
+        }
+      )
+    }
+
+    const json: StaffServicesResponse = await response.json()
+
+    // Return the successful response with CORS headers
+    return Response.json(json, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+      }
+    })
+
+    // const json = await getBoardFromRdm(context.env.RDM_LDBSVWS_GetDepBoardWithDetails_API_KEY, station, maxServices, timeOffset, timeWindow)
+    // if (!json) {
     //   return Response.json({ error: true, message: 'Upstream fetch error' })
     // }
-    //
-    // if (response.headers.get('CF-Cache-Status') === 'HIT') {
-    //   console.log(`Departure board cache hit (${station})`)
-    // }
-    //
-    // const json: StaffServicesResponse = await response.json()
-
-    const json = await getBoardFromRdm(context.env.RDM_LDBSVWS_GetDepBoardWithDetails_API_KEY, station, maxServices, timeOffset, timeWindow)
-    if (!json) {
-      return Response.json({ error: true, message: 'Upstream fetch error' })
-    }
 
     await Promise.all(json.trainServices?.map(service => processService(context.env, service)) ?? [])
 
