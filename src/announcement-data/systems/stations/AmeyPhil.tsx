@@ -32,7 +32,8 @@ export interface INextTrainAnnouncementOptions {
   notCallingAtStations: { crsCode: string }[]
 }
 
-export interface IStandingTrainAnnouncementOptions extends Omit<INextTrainAnnouncementOptions, 'chime'> {
+export interface IStandingTrainAnnouncementOptions extends INextTrainAnnouncementOptions {
+  chime: ChimeType
   thisStationCode: string
   mindTheGap: boolean
 }
@@ -4943,6 +4944,9 @@ export default class AmeyPhil extends StationAnnouncementSystem {
   async playStandingTrainAnnouncement(options: IStandingTrainAnnouncementOptions, download: boolean = false): Promise<void> {
     const files: AudioItem[] = []
 
+    const chime = this.getChime(options.chime)
+    if (chime) files.push(chime)
+
     //files.push(`station.m.${options.thisStationCode}`, this.standingOptions.thisIsId, `station.e.${options.thisStationCode}`)
 
     if (options.mindTheGap) {
@@ -5236,7 +5240,7 @@ export default class AmeyPhil extends StationAnnouncementSystem {
       )
     }
 
-    files.push({ id: 's.this train is the service from', opts: { delayStart: this.SHORT_DELAY } }, `station.e.${options.originStationCode}`)
+    //files.push({ id: 's.this train is the service from', opts: { delayStart: this.SHORT_DELAY } }, `station.e.${options.originStationCode}`)
 
     await this.playAudioFiles(files, download)
   }

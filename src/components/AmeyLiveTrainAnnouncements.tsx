@@ -44,7 +44,7 @@ dayjs.extend(dayjsTz)
 
 dayjs.tz.setDefault('Europe/London')
 
-const MIN_TIME_TO_ANNOUNCE = 4
+const MIN_TIME_TO_ANNOUNCE = 6
 const RDM_BASE_URL = 'https://raildotmatrix.co.uk/board'
 // const RDM_BASE_URL = 'http://localhost:8788/board'
 const RDM_BASE_URL_ORIGIN = new URL(RDM_BASE_URL).origin
@@ -752,6 +752,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       console.log(`Mind the gap: ${mindTheGap}`)
 
       const options: IStandingTrainAnnouncementOptions = {
+        chime: chimeType || systems[systemKey].DEFAULT_CHIME,
         thisStationCode: selectedCrs,
         mindTheGap: mindTheGap,
         hour: h === '00' ? '00 - midnight' : h,
@@ -1095,7 +1096,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
 
       const params = new URLSearchParams()
       params.set('station', selectedCrs)
-      params.set('maxServices', '10')
+      params.set('maxServices', '25')
       params.set('timeOffset', '0')
       params.set('timeWindow', '40')
 
@@ -1320,7 +1321,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       addLog('--------------------------------------')
     }
 
-    const refreshInterval = setInterval(checkAndPlay, iframeReady ? 40_000 : 1000)
+    const refreshInterval = setInterval(checkAndPlay, iframeReady ? 40_000 : 250)
     checkAndPlay()
 
     return () => {
