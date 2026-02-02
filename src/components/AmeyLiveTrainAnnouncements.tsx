@@ -783,8 +783,8 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
           )})`,
         )
         await standingTrainHandler[systemKey](options)
-        console.log(`[Live Trains] Announcement for ${train.rid} complete: waiting 5s until next`)
-        setIsPlayingAfter(false, 5000)
+        console.log(`[Live Trains] Announcement for ${train.rid} complete: waiting 1s until next`)
+        setIsPlayingAfter(false, 1000)
       } catch (e) {
         console.warn(`[Live Trains] Error playing announcement for ${train.rid}; see below`)
         console.error(e)
@@ -1157,6 +1157,12 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               return false
             }
 
+            if (nextTrainAnnounced.current[s.rid]) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
+              console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
+              return false
+            }
+
             if (s.isCancelled) {
               addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
               console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
@@ -1175,18 +1181,10 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               return false
             }
 
-            if (!s.ataSpecified || dayjs.tz(s.ata, 'Europe/London').add(15, 'seconds').isAfter(dayjs.tz())) {
-              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it has not stopped yet (${s.ata} +15s)`)
+            if (!s.ataSpecified) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it has not stopped yet`)
               console.log(
-                `[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it has not stopped yet (${s.ata} +15s)`,
-              )
-              return false
-            }
-
-            if (!s.atdSpecified || dayjs.tz(s.atd, 'Europe/London').subtract(1, 'minutes').isAfter(dayjs.tz())) {
-              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it will depart soon (${s.atd} -1m)`)
-              console.log(
-                `[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it will depart soon (${s.atd} -1m)`,
+                `[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it has not stopped yet`,
               )
               return false
             }
@@ -1210,6 +1208,14 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
             if (approachingTrainAnnounced.current[s.rid]) {
               addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
               console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
+              return false
+            }
+
+            if (s.ataSpecified) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as has already arrived (${s.ata})`)
+              console.log(
+                `[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as has already arrived (${s.ata})`,
+              )
               return false
             }
 
