@@ -593,6 +593,8 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
   const nextTrainAnnounced = useRef<Record<string, number>>({})
   const disruptedTrainAnnounced = useRef<Record<string, number>>({})
 
+  const platformEngagement = useRef<Record<string, number>>({})
+
   const stationNameToCrsMap = useMemo(
     () =>
       Object.fromEntries(
@@ -630,8 +632,13 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       // Remove older than 10 mins
       const nextDisrupted = Object.fromEntries(Object.entries(disruptedTrainAnnounced.current).filter(([_, v]) => now - v < 1000 * 60 * 10))
       disruptedTrainAnnounced.current = nextDisrupted
+
+      // Remove platform engagement when release time has passed
+      const nextPlatforms = Object.fromEntries(Object.entries(platformEngagement.current).filter(([_,v]) => now < v))
+      platformEngagement.current = nextPlatforms
+      console.log(platformEngagement.current)
     },
-    [approachingTrainAnnounced, nextTrainAnnounced, disruptedTrainAnnounced],
+    [approachingTrainAnnounced, nextTrainAnnounced, disruptedTrainAnnounced, platformEngagement, standingTrainAnnounced],
   )
 
   const markStandingTrainAnnounced = useCallback(
@@ -658,6 +665,13 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       nextTrainAnnounced.current[id] = Date.now()
     },
     [nextTrainAnnounced],
+  )
+
+  const markPlatformEngagement = useCallback(
+    function markPlatformEngagement(platform: string, releaseTime: number) {
+      platformEngagement.current[platform] = releaseTime
+    },
+    [platformEngagement],
   )
 
   const markDisruptedTrainAnnounced = useCallback(
@@ -724,6 +738,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       addLog(`Announcing standing train: ${train.rid} (${train.std} to ${pluraliseStrings(...train.destination.map(l => l.locationName))})`)
 
       markStandingTrainAnnounced(train.rid)
+      markPlatformEngagement(getPlatform(train.platform, systemKey), dayjs.tz(train.etd).valueOf())
 
       const h = dayjs.tz(train.std).format('HH')
       const m = dayjs.tz(train.std).format('mm')
@@ -812,6 +827,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       addLog(`Announcing approaching train: ${train.rid} (${train.std} to ${pluraliseStrings(...train.destination.map(l => l.locationName))})`)
 
       markApproachingTrainAnnounced(train.rid)
+      markPlatformEngagement(getPlatform(train.platform, systemKey), dayjs.tz(train.etd).valueOf())
 
       const h = dayjs.tz(train.std).format('HH')
       const m = dayjs.tz(train.std).format('mm')
@@ -889,6 +905,7 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
       addLog(`Announcing next train: ${train.rid} (${train.std} to ${pluraliseStrings(...train.destination.map(l => l.locationName))})`)
 
       markNextTrainAnnounced(train.rid)
+      markPlatformEngagement(getPlatform(train.platform, systemKey), dayjs.tz(train.etd).valueOf())
 
       const h = dayjs.tz(train.std).format('HH')
       const m = dayjs.tz(train.std).format('mm')
@@ -1157,12 +1174,6 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               return false
             }
 
-            if (nextTrainAnnounced.current[s.rid]) {
-              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
-              console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it was announced recently`)
-              return false
-            }
-
             if (s.isCancelled) {
               addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
               console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
@@ -1219,6 +1230,13 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               return false
             }
 
+            //check if the platform is occupied already
+            if(platformEngagement.current[s.platform ?? '']) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as platform ${s.platform} is currently engaged until ${new Date(platformEngagement.current[s.platform]).toLocaleTimeString('en-GB', { hour12: false })}`)
+              console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as platform ${s.platform} is currently engaged until ${new Date(platformEngagement.current[s.platform]).toLocaleTimeString('en-GB', { hour12: false })}`)
+              return false
+            }
+
             if (s.isCancelled) {
               addLog(`Skipping ${s.trainid} ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
               console.log(`[Live Trains] Skipping ${s.rid} (${s.std} to ${s.destination[0].locationName}) as it is cancelled`)
@@ -1259,6 +1277,14 @@ export function LiveTrainAnnouncements<SystemKeys extends string>({
               console.log(`[Live Trains] Skipping ${s.rid} (${std} to ${s.destination[0].locationName}) as it was announced recently`)
               return false
             }
+
+            //check if the platform is occupied already
+            if(platformEngagement.current[s.platform ?? '']) {
+              addLog(`Skipping ${s.trainid} ${s.rid} (${std} to ${s.destination[0].locationName}) as platform ${s.platform} is currently engaged until ${new Date(platformEngagement.current[s.platform]).toLocaleTimeString('en-GB', { hour12: false })}`)
+              console.log(`[Live Trains] Skipping ${s.rid} (${std} to ${s.destination[0].locationName}) as platform ${s.platform} is currently engaged until ${new Date(platformEngagement.current[s.platform]).toLocaleTimeString('en-GB', { hour12: false })}`)
+              return false
+            }
+
             if (s.isCancelled) {
               addLog(`Skipping ${s.trainid} ${s.rid} (${std} to ${s.destination[0].locationName}) as it is cancelled`)
               console.log(`[Live Trains] Skipping ${s.rid} (${std} to ${s.destination[0].locationName}) as it is cancelled`)
