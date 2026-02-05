@@ -44,7 +44,7 @@ dayjs.extend(dayjsTz)
 
 dayjs.tz.setDefault('Europe/London')
 
-const MIN_TIME_TO_ANNOUNCE = 6
+const MIN_TIME_TO_ANNOUNCE = 5
 const RDM_BASE_URL = 'https://raildotmatrix.co.uk/board'
 // const RDM_BASE_URL = 'http://localhost:8788/board'
 const RDM_BASE_URL_ORIGIN = new URL(RDM_BASE_URL).origin
