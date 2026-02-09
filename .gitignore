@@ -90,3 +90,5 @@ static/temp/
 ~$*.xlsx
 
 .dev.vars
+
+/unused_audio
